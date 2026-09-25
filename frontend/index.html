@@ -217,7 +217,36 @@
     <!-- Results -->
     <section class="results-container hidden" id="resultsContainer">
 
-      <article class="card result-card hidden" id="summaryCard">
+      <!-- Tab Navigation -->
+      <div class="results-tabs">
+        <div class="tab-bar" id="resultsTabBar" role="tablist" aria-label="Study Results Navigation">
+          <button class="tab-btn active" data-tab="summaryTab" id="summaryTabBtn" type="button" 
+                  role="tab" aria-selected="true" aria-controls="summaryTab">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="21" y1="10" x2="3" y2="10"/>
+              <line x1="21" y1="6" x2="3" y2="6"/>
+              <line x1="21" y1="14" x2="3" y2="14"/>
+              <line x1="21" y1="18" x2="7" y2="18"/>
+            </svg>
+            Summary
+          </button>
+          <button class="tab-btn" data-tab="quizTab" id="quizTabBtn" type="button" 
+                  role="tab" aria-selected="false" aria-controls="quizTab">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Quiz
+            <span class="quiz-tab-badge hidden" id="quizTabBadge" aria-label="Quiz score">0/0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content: Summary Tab -->
+      <div class="tab-content" id="summaryTab" data-tab-content="summaryTab" 
+           role="tabpanel" aria-labelledby="summaryTabBtn">
+        <article class="card result-card hidden" id="summaryCard">
         <div class="result-header">
           <div class="result-title-group">
             <span class="pill pill-green">Summary</span>
@@ -233,9 +262,13 @@
           <h4 class="key-points-heading">Core Takeaways</h4>
           <ul class="key-points-list" id="keyPointsList"></ul>
         </div>
-      </article>
+        </article>
+      </div>
 
-      <article class="card result-card hidden" id="mcqCard">
+      <!-- Tab Content: Quiz Tab -->
+      <div class="tab-content hidden" id="quizTab" data-tab-content="quizTab" 
+           role="tabpanel" aria-labelledby="quizTabBtn">
+        <article class="card result-card hidden" id="mcqCard">
         <div class="result-header">
           <div class="result-title-group">
             <span class="pill pill-amber">Quiz</span>
@@ -250,7 +283,8 @@
           <button type="button" class="btn btn-primary" id="btnSubmitQuiz">Check Answers</button>
           <button type="button" class="btn btn-ghost hidden" id="btnResetQuiz">Reset</button>
         </div>
-      </article>
+        </article>
+      </div>
 
     </section>
   </main>

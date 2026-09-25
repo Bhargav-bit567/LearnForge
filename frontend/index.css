@@ -1081,8 +1081,76 @@ body::after {
   color: var(--text-muted); cursor: pointer;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
   transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
 }
+.tab-btn:hover { color: var(--text-secondary); }
 .tab-btn.active { color: var(--neon); border-bottom-color: var(--neon); text-shadow: 0 0 8px var(--neon-glow); }
+.tab-btn svg { opacity: 0.7; }
+.tab-btn.active svg { opacity: 1; }
+
+/* Tab content containers */
+.tab-content { 
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.tab-content.hidden { 
+  display: none;
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+/* Results tabs specific styling */
+.results-tabs {
+  margin-bottom: 0;
+}
+
+.results-tabs .tab-bar {
+  margin-bottom: 24px;
+}
+
+/* Quiz tab badge for showing score */
+.quiz-tab-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--amber-dim);
+  color: var(--amber);
+  border: 1px solid rgba(255,183,0,0.3);
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: 2px;
+}
+
+/* Ensure tab content cards display properly */
+#summaryTab .result-card,
+#quizTab .result-card {
+  display: block;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 640px) {
+  .results-tabs .tab-bar {
+    gap: 2px;
+  }
+  
+  .tab-btn {
+    padding: 10px 12px;
+    font-size: 0.84rem;
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .tab-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .quiz-tab-badge {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+  }
+}
 .tab-content.hidden { display: none; }
 
 .history-list { display: flex; flex-direction: column; gap: 8px; }
