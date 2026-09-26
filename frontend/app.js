@@ -128,6 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
+    // Update quiz tab badge
     updateQuizTabBadge() {
       if (this.isHistoryPanel || !quizTabBadge || currentMCQs.length === 0) return;
       
@@ -136,17 +137,28 @@ document.addEventListener("DOMContentLoaded", () => {
       
       if (quizSubmitted && scoreValue && scoreTotal) {
         // Show actual score if submitted
-        const score = scoreValue.textContent;
-        const total = scoreTotal.textContent;
+        const score = parseInt(scoreValue.textContent);
+        const total = parseInt(scoreTotal.textContent);
+        const percentage = (score / total) * 100;
+        
         quizTabBadge.textContent = `${score}/${total}`;
         quizTabBadge.classList.remove('hidden');
+        
+        // Add score-based styling classes
+        quizTabBadge.classList.remove('high-score', 'low-score');
+        if (percentage >= 80) {
+          quizTabBadge.classList.add('high-score');
+        } else if (percentage < 60) {
+          quizTabBadge.classList.add('low-score');
+        }
       } else if (answeredCount > 0) {
         // Show progress if answering
         quizTabBadge.textContent = `${answeredCount}/${totalCount}`;
-        quizTabBadge.classList.remove('hidden');
+        quizTabBadge.classList.remove('hidden', 'high-score', 'low-score');
       } else {
         // Hide badge if no progress
         quizTabBadge.classList.add('hidden');
+        quizTabBadge.classList.remove('high-score', 'low-score');
       }
     }
 
@@ -1005,18 +1017,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Helper function to update quiz progress indicator
+  // Helper function to update quiz progress indicator with enhanced styling
   function updateQuizProgressIndicator() {
     const progressIndicator = document.getElementById('quiz-progress-indicator');
     if (progressIndicator) {
       const answeredCount = quizAnswers.size;
       const totalCount = currentMCQs.length;
-      progressIndicator.textContent = `${answeredCount}/${totalCount} answered`;
       
       if (answeredCount === totalCount) {
+        progressIndicator.textContent = `✓ All ${totalCount} questions answered`;
+        progressIndicator.classList.add('complete');
         progressIndicator.style.color = 'var(--neon)';
-        progressIndicator.innerHTML = `✓ All ${totalCount} questions answered`;
+        
+        // Add subtle celebration animation
+        progressIndicator.style.animation = 'pulse 0.6s ease-in-out';
+        setTimeout(() => {
+          progressIndicator.style.animation = '';
+        }, 600);
       } else {
+        progressIndicator.textContent = `${answeredCount}/${totalCount} answered`;
+        progressIndicator.classList.remove('complete');
         progressIndicator.style.color = 'var(--text-muted)';
       }
     }
@@ -1038,23 +1058,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (unansweredQuestions.length > 0) {
-      // Highlight unanswered questions
-      unansweredElements.forEach(el => {
-        el.style.border = '2px solid var(--red)';
-        el.style.borderRadius = 'var(--r-md)';
-        el.style.padding = '12px';
-        el.style.marginBottom = '8px';
+      // Enhanced error highlighting for unanswered questions
+      unansweredElements.forEach((el, index) => {
+        el.classList.add('highlight-error');
+        
+        // Remove highlighting after animation
         setTimeout(() => {
-          el.style.border = '';
-          el.style.padding = '';
-          el.style.marginBottom = '';
+          el.classList.remove('highlight-error');
         }, 3000);
+        
+        // Stagger the highlighting for visual effect
+        setTimeout(() => {
+          el.style.transform = 'scale(1.02)';
+          setTimeout(() => {
+            el.style.transform = '';
+          }, 200);
+        }, index * 100);
       });
       
-      // Scroll to first unanswered question
-      unansweredElements[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      // Scroll to first unanswered question with smooth animation
+      unansweredElements[0].scrollIntoView({ 
+        behavior: "smooth", 
+        block: "center",
+        inline: "nearest"
+      });
       
-      // Show better error message
+      // Show enhanced error message
       showError(`Please answer ${unansweredQuestions.length === 1 ? 'question' : 'questions'} ${unansweredQuestions.join(', ')} before submitting.`);
       return;
     }
