@@ -876,6 +876,14 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSubmitQuiz.classList.remove("hidden");
     btnSubmitQuiz.disabled = false;
     
+    // Reset button text and style
+    btnSubmitQuiz.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Check Answers
+    `;
+    
     // Reset quiz state when rendering new MCQs
     if (resultsTabManager) {
       resultsTabManager.resetQuizState();
@@ -887,6 +895,26 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Add quiz header with progress info
+    const quizHeader = document.createElement("div");
+    quizHeader.className = "quiz-header";
+    quizHeader.innerHTML = `
+      <div style="background: rgba(0,255,100,0.04); border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+          <span style="font-family: var(--font-heading); font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">
+            📝 Practice Quiz
+          </span>
+          <span id="quiz-progress-indicator" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">
+            0/${currentMCQs.length} answered
+          </span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+          Answer all questions, then click "Check Answers" to see your results and explanations.
+        </div>
+      </div>
+    `;
+    mcqList.appendChild(quizHeader);
+
     currentMCQs.forEach((item, index) => {
       const itemEl = document.createElement("div");
       itemEl.className = "mcq-item";
@@ -894,7 +922,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const qTitle = document.createElement("div");
       qTitle.className = "mcq-question";
-      qTitle.textContent = `${index + 1}. ${item.question}`;
+      qTitle.innerHTML = `
+        <span style="color: var(--text-muted); font-family: var(--font-mono); font-size: 0.8rem; margin-right: 8px;">
+          Q${index + 1}
+        </span>
+        ${item.question}
+      `;
       itemEl.appendChild(qTitle);
 
       const optGroup = document.createElement("div");
@@ -916,6 +949,9 @@ document.addEventListener("DOMContentLoaded", () => {
           if (resultsTabManager) {
             resultsTabManager.updateQuizTabBadge();
           }
+          
+          // Update progress indicator
+          updateQuizProgressIndicator();
         });
         const span = document.createElement("span");
         span.textContent = opt;
@@ -937,6 +973,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Restore saved answers if any exist
     if (resultsTabManager && quizAnswers.size > 0) {
       resultsTabManager.restoreQuizAnswers();
+      updateQuizProgressIndicator();
     }
     
     // Only scroll if we're currently on the quiz tab
@@ -945,45 +982,122 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Helper function to update quiz progress indicator
+  function updateQuizProgressIndicator() {
+    const progressIndicator = document.getElementById('quiz-progress-indicator');
+    if (progressIndicator) {
+      const answeredCount = quizAnswers.size;
+      const totalCount = currentMCQs.length;
+      progressIndicator.textContent = `${answeredCount}/${totalCount} answered`;
+      
+      if (answeredCount === totalCount) {
+        progressIndicator.style.color = 'var(--neon)';
+        progressIndicator.innerHTML = `✓ All ${totalCount} questions answered`;
+      } else {
+        progressIndicator.style.color = 'var(--text-muted)';
+      }
+    }
+  }
+
   // ── Quiz scoring ───────────────────────────────────────────────────────────
   btnSubmitQuiz.addEventListener("click", async () => {
     // Validate that all questions are answered
     const unansweredQuestions = [];
+    const unansweredElements = [];
+    
     currentMCQs.forEach((item, index) => {
       const itemEl = mcqList.querySelector(`[data-index="${index}"]`);
       const selected = itemEl.querySelector(`input[name="q_${index}"]:checked`);
       if (!selected) {
         unansweredQuestions.push(index + 1);
+        unansweredElements.push(itemEl);
       }
     });
 
     if (unansweredQuestions.length > 0) {
-      alert(`Please answer all questions before submitting. Missing: ${unansweredQuestions.join(', ')}`);
+      // Highlight unanswered questions
+      unansweredElements.forEach(el => {
+        el.style.border = '2px solid var(--red)';
+        el.style.borderRadius = 'var(--r-md)';
+        el.style.padding = '12px';
+        el.style.marginBottom = '8px';
+        setTimeout(() => {
+          el.style.border = '';
+          el.style.padding = '';
+          el.style.marginBottom = '';
+        }, 3000);
+      });
+      
+      // Scroll to first unanswered question
+      unansweredElements[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      
+      // Show better error message
+      showError(`Please answer ${unansweredQuestions.length === 1 ? 'question' : 'questions'} ${unansweredQuestions.join(', ')} before submitting.`);
       return;
     }
+
+    // Show submission confirmation with loading state
+    btnSubmitQuiz.disabled = true;
+    btnSubmitQuiz.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 6v6l4 2"/>
+      </svg>
+      Checking Answers...
+    `;
 
     let score = 0;
     const answers = [];
 
+    // Process each question with visual feedback
     currentMCQs.forEach((item, index) => {
       const itemEl = mcqList.querySelector(`[data-index="${index}"]`);
       const selected = itemEl.querySelector(`input[name="q_${index}"]:checked`);
       itemEl.querySelector(".mcq-explanation").classList.remove("hidden");
 
+      // Mark correct answers
       itemEl.querySelectorAll(".mcq-option-label").forEach(opt => {
-        if (opt.querySelector("input").value === item.correct_answer) opt.classList.add("correct");
+        if (opt.querySelector("input").value === item.correct_answer) {
+          opt.classList.add("correct");
+        }
       });
 
       const isCorrect = selected && selected.value === item.correct_answer;
-      if (isCorrect) score++;
-      else if (selected) selected.parentElement.classList.add("incorrect");
+      if (isCorrect) {
+        score++;
+      } else if (selected) {
+        selected.parentElement.classList.add("incorrect");
+      }
 
-      answers.push({ question: item.question, selected: selected?.value || null, correct: item.correct_answer, is_correct: isCorrect });
+      answers.push({ 
+        question: item.question, 
+        selected: selected?.value || null, 
+        correct: item.correct_answer, 
+        is_correct: isCorrect 
+      });
     });
 
+    // Update score display with animation
     scoreValue.textContent = score;
     scoreTotal.textContent = currentMCQs.length;
     quizScoreBadge.classList.remove("hidden");
+    
+    // Add score-based styling
+    const percentage = (score / currentMCQs.length) * 100;
+    if (percentage >= 80) {
+      quizScoreBadge.style.background = 'rgba(0,255,120,0.15)';
+      quizScoreBadge.style.color = 'var(--neon)';
+      quizScoreBadge.style.borderColor = 'var(--neon)';
+    } else if (percentage >= 60) {
+      quizScoreBadge.style.background = 'var(--amber-dim)';
+      quizScoreBadge.style.color = 'var(--amber)';
+      quizScoreBadge.style.borderColor = 'rgba(255,183,0,0.3)';
+    } else {
+      quizScoreBadge.style.background = 'var(--red-dim)';
+      quizScoreBadge.style.color = 'var(--red)';
+      quizScoreBadge.style.borderColor = 'rgba(255,77,109,0.3)';
+    }
+    
     btnSubmitQuiz.classList.add("hidden");
     btnResetQuiz.classList.remove("hidden");
     
@@ -992,6 +1106,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (resultsTabManager) {
       resultsTabManager.updateQuizTabBadge();
     }
+
+    // Show completion message
+    const completionMessage = document.createElement('div');
+    completionMessage.className = 'quiz-completion-message';
+    completionMessage.innerHTML = `
+      <div style="background: rgba(0,255,100,0.08); border: 1px solid var(--border); border-radius: var(--r-md); padding: 16px; margin: 16px 0; text-align: center;">
+        <div style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 4px;">
+          🎉 Quiz Complete!
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-secondary);">
+          Score: ${score}/${currentMCQs.length} (${Math.round(percentage)}%)
+          ${percentage >= 80 ? ' - Excellent work!' : percentage >= 60 ? ' - Good job!' : ' - Keep practicing!'}
+        </div>
+      </div>
+    `;
+    
+    mcqList.insertBefore(completionMessage, mcqList.firstChild);
+    
+    // Scroll to show completion message
+    completionMessage.scrollIntoView({ behavior: "smooth", block: "center" });
 
     // Save attempt if authenticated and we have a result_id
     if (authToken && currentResultId) {
@@ -1006,10 +1140,44 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   btnResetQuiz.addEventListener("click", () => {
+    // Show confirmation for reset
+    const confirmed = confirm("Are you sure you want to reset the quiz? This will clear all your answers and allow you to retake it.");
+    if (!confirmed) return;
+    
+    // Reset TabManager state
     if (resultsTabManager) {
       resultsTabManager.resetQuizState();
     }
+    
+    // Remove completion message
+    const completionMessage = document.querySelector('.quiz-completion-message');
+    if (completionMessage) {
+      completionMessage.remove();
+    }
+    
+    // Reset score badge styling
+    quizScoreBadge.style.background = '';
+    quizScoreBadge.style.color = '';
+    quizScoreBadge.style.borderColor = '';
+    
+    // Re-render the quiz
     renderMCQs({ mcqs: currentMCQs });
+    
+    // Show reset notification
+    const resetMessage = document.createElement('div');
+    resetMessage.innerHTML = `
+      <div style="background: rgba(0,229,204,0.08); border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px; margin: 16px 0; text-align: center; color: var(--teal);">
+        ✨ Quiz reset! You can now retake all questions.
+      </div>
+    `;
+    mcqList.insertBefore(resetMessage, mcqList.firstChild);
+    
+    // Remove reset message after 3 seconds
+    setTimeout(() => {
+      if (resetMessage && resetMessage.parentNode) {
+        resetMessage.remove();
+      }
+    }, 3000);
   });
 });
 
