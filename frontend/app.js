@@ -7,6 +7,137 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentResultId = null;
   let authToken = localStorage.getItem("auth_token") || null;
   let currentUser = JSON.parse(localStorage.getItem("auth_user") || "null");
+  
+  // Tab state management
+  let quizAnswers = new Map(); // Store quiz answers separately from submission state
+  let quizSubmitted = false;
+  let currentActiveTab = "summaryTab";
+
+  // ── TabManager Class ───────────────────────────────────────────────────────
+  class TabManager {
+    constructor(tabBarSelector) {
+      this.tabBar = document.querySelector(tabBarSelector);
+      this.tabs = this.tabBar?.querySelectorAll('.tab-btn') || [];
+      this.activeTab = null;
+      this.init();
+    }
+
+    init() {
+      if (!this.tabBar) return;
+      
+      // Find initially active tab
+      this.activeTab = this.tabBar.querySelector('.tab-btn.active')?.dataset.tab || null;
+      
+      // Add event listeners
+      this.tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.switchTab(tab.dataset.tab);
+        });
+        
+        // Add keyboard support
+        tab.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.switchTab(tab.dataset.tab);
+          }
+        });
+      });
+    }
+
+    switchTab(targetTab) {
+      if (!targetTab || targetTab === this.activeTab) return;
+      
+      // Save quiz answers before switching (if coming from quiz tab)
+      if (this.activeTab === 'quizTab') {
+        this.saveQuizAnswers();
+      }
+      
+      // Update tab buttons
+      this.tabs.forEach(tab => {
+        const isActive = tab.dataset.tab === targetTab;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive);
+      });
+      
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        const isVisible = content.id === targetTab;
+        content.classList.toggle('hidden', !isVisible);
+      });
+      
+      // Update active tab state
+      const prevTab = this.activeTab;
+      this.activeTab = targetTab;
+      currentActiveTab = targetTab;
+      
+      // Restore quiz answers if switching to quiz tab
+      if (targetTab === 'quizTab') {
+        this.restoreQuizAnswers();
+      }
+      
+      // Update quiz tab badge if quiz is completed
+      this.updateQuizTabBadge();
+      
+      console.log(`Tab switched from ${prevTab} to ${targetTab}`);
+    }
+
+    saveQuizAnswers() {
+      const mcqItems = document.querySelectorAll('.mcq-item');
+      mcqItems.forEach((item, index) => {
+        const selectedOption = item.querySelector('input[type="radio"]:checked');
+        if (selectedOption) {
+          quizAnswers.set(index, selectedOption.value);
+        }
+      });
+    }
+
+    restoreQuizAnswers() {
+      const mcqItems = document.querySelectorAll('.mcq-item');
+      mcqItems.forEach((item, index) => {
+        if (quizAnswers.has(index)) {
+          const savedAnswer = quizAnswers.get(index);
+          const targetOption = item.querySelector(`input[value="${savedAnswer}"]`);
+          if (targetOption) {
+            targetOption.checked = true;
+            targetOption.closest('.mcq-option-label').classList.add('selected');
+          }
+        }
+      });
+    }
+
+    updateQuizTabBadge() {
+      if (!quizTabBadge || currentMCQs.length === 0) return;
+      
+      const answeredCount = quizAnswers.size;
+      const totalCount = currentMCQs.length;
+      
+      if (quizSubmitted && scoreValue && scoreTotal) {
+        // Show actual score if submitted
+        const score = scoreValue.textContent;
+        const total = scoreTotal.textContent;
+        quizTabBadge.textContent = `${score}/${total}`;
+        quizTabBadge.classList.remove('hidden');
+      } else if (answeredCount > 0) {
+        // Show progress if answering
+        quizTabBadge.textContent = `${answeredCount}/${totalCount}`;
+        quizTabBadge.classList.remove('hidden');
+      } else {
+        // Hide badge if no progress
+        quizTabBadge.classList.add('hidden');
+      }
+    }
+
+    resetQuizState() {
+      quizAnswers.clear();
+      quizSubmitted = false;
+      this.updateQuizTabBadge();
+    }
+
+    getActiveTab() {
+      return this.activeTab;
+    }
+  }
 
   // ── Element refs ───────────────────────────────────────────────────────────
   const dropZone = document.getElementById("dropZone");
@@ -66,6 +197,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const quizHistoryList = document.getElementById("quizHistoryList");
   const tabBtns = document.querySelectorAll(".tab-btn");
 
+  // Results tab elements
+  const resultsTabBar = document.getElementById("resultsTabBar");
+  const summaryTabBtn = document.getElementById("summaryTabBtn");
+  const quizTabBtn = document.getElementById("quizTabBtn");
+  const quizTabBadge = document.getElementById("quizTabBadge");
+  const summaryTab = document.getElementById("summaryTab");
+  const quizTab = document.getElementById("quizTab");
+
   // ── Health check ───────────────────────────────────────────────────────────
   async function checkHealth() {
     try {
@@ -76,6 +215,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
   checkHealth();
+
+  // ── Initialize TabManager ──────────────────────────────────────────────────
+  let resultsTabManager;
+  
+  // Initialize tab managers after DOM is ready
+  function initTabManagers() {
+    resultsTabManager = new TabManager('#resultsTabBar');
+  }
+  
+  // Call initialization
+  initTabManagers();
 
   // ── Auth UI state ──────────────────────────────────────────────────────────
   function updateAuthUI() {
@@ -196,10 +346,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   tabBtns.forEach(btn => {
     btn.addEventListener("click", () => {
-      tabBtns.forEach(b => b.classList.remove("active"));
+      // Only handle history panel tabs here
+      if (!btn.closest('#historyPanel')) return;
+      
+      tabBtns.forEach(b => {
+        if (b.closest('#historyPanel')) {
+          b.classList.remove("active");
+        }
+      });
       btn.classList.add("active");
-      document.querySelectorAll(".tab-content").forEach(t => t.classList.add("hidden"));
-      document.getElementById(btn.dataset.tab).classList.remove("hidden");
+      
+      // Handle history panel tab content
+      const historyTabContents = document.querySelectorAll('#historyPanel .tab-content');
+      historyTabContents.forEach(t => t.classList.add("hidden"));
+      const targetContent = document.getElementById(btn.dataset.tab);
+      if (targetContent) {
+        targetContent.classList.remove("hidden");
+      }
+      
       if (btn.dataset.tab === "quizTab") loadQuizHistory();
     });
   });
@@ -325,6 +489,12 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSummary.disabled = true;
     btnMCQs.disabled = true;
     guestNote.classList.add("hidden");
+    
+    // Reset tab state when file is removed
+    if (resultsTabManager) {
+      resultsTabManager.resetQuizState();
+      resultsTabManager.switchTab('summaryTab'); // Default to summary tab
+    }
   });
 
   closeAlertBtn.addEventListener("click", hideError);
@@ -357,6 +527,12 @@ document.addEventListener("DOMContentLoaded", () => {
   async function triggerStudyAction(action) {
     if (!currentFile) return;
     setLoading(true, action);
+    
+    // Reset tab state when processing new content
+    if (resultsTabManager) {
+      resultsTabManager.resetQuizState();
+    }
+    
     const formData = new FormData();
     formData.append("file", currentFile);
     formData.append("action", action);
@@ -377,8 +553,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
       currentResultId = data.result_id || null;
       resultsContainer.classList.remove("hidden");
-      if (action === "summary") renderSummary(data);
-      else renderMCQs(data);
+      
+      if (action === "summary") {
+        renderSummary(data);
+        // Switch to summary tab automatically when summary is generated
+        if (resultsTabManager) {
+          resultsTabManager.switchTab('summaryTab');
+        }
+      } else {
+        renderMCQs(data);
+        // Switch to quiz tab automatically when MCQs are generated
+        if (resultsTabManager) {
+          resultsTabManager.switchTab('quizTab');
+        }
+      }
     } catch (err) {
       showError(err.message || "Failed to process the document.");
     } finally {
@@ -687,6 +875,11 @@ document.addEventListener("DOMContentLoaded", () => {
     btnResetQuiz.classList.add("hidden");
     btnSubmitQuiz.classList.remove("hidden");
     btnSubmitQuiz.disabled = false;
+    
+    // Reset quiz state when rendering new MCQs
+    if (resultsTabManager) {
+      resultsTabManager.resetQuizState();
+    }
 
     if (!currentMCQs.length) {
       mcqList.innerHTML = "<p class='text-muted'>No questions returned.</p>";
@@ -717,6 +910,12 @@ document.addEventListener("DOMContentLoaded", () => {
         radio.addEventListener("change", () => {
           optGroup.querySelectorAll(".mcq-option-label").forEach(l => l.classList.remove("selected"));
           label.classList.add("selected");
+          
+          // Update quiz answers state and tab badge
+          quizAnswers.set(index, opt);
+          if (resultsTabManager) {
+            resultsTabManager.updateQuizTabBadge();
+          }
         });
         const span = document.createElement("span");
         span.textContent = opt;
@@ -734,11 +933,35 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     mcqCard.classList.remove("hidden");
-    mcqCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    
+    // Restore saved answers if any exist
+    if (resultsTabManager && quizAnswers.size > 0) {
+      resultsTabManager.restoreQuizAnswers();
+    }
+    
+    // Only scroll if we're currently on the quiz tab
+    if (currentActiveTab === 'quizTab') {
+      mcqCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   }
 
   // ── Quiz scoring ───────────────────────────────────────────────────────────
   btnSubmitQuiz.addEventListener("click", async () => {
+    // Validate that all questions are answered
+    const unansweredQuestions = [];
+    currentMCQs.forEach((item, index) => {
+      const itemEl = mcqList.querySelector(`[data-index="${index}"]`);
+      const selected = itemEl.querySelector(`input[name="q_${index}"]:checked`);
+      if (!selected) {
+        unansweredQuestions.push(index + 1);
+      }
+    });
+
+    if (unansweredQuestions.length > 0) {
+      alert(`Please answer all questions before submitting. Missing: ${unansweredQuestions.join(', ')}`);
+      return;
+    }
+
     let score = 0;
     const answers = [];
 
@@ -763,6 +986,12 @@ document.addEventListener("DOMContentLoaded", () => {
     quizScoreBadge.classList.remove("hidden");
     btnSubmitQuiz.classList.add("hidden");
     btnResetQuiz.classList.remove("hidden");
+    
+    // Mark quiz as submitted and update tab badge
+    quizSubmitted = true;
+    if (resultsTabManager) {
+      resultsTabManager.updateQuizTabBadge();
+    }
 
     // Save attempt if authenticated and we have a result_id
     if (authToken && currentResultId) {
@@ -776,7 +1005,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  btnResetQuiz.addEventListener("click", () => renderMCQs({ mcqs: currentMCQs }));
+  btnResetQuiz.addEventListener("click", () => {
+    if (resultsTabManager) {
+      resultsTabManager.resetQuizState();
+    }
+    renderMCQs({ mcqs: currentMCQs });
+  });
 });
 
 // ── Neural Canvas Background ──────────────────────────────────────────────
