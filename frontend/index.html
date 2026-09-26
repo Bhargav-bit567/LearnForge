@@ -110,14 +110,30 @@
         <div class="stat-card"><div class="stat-value" id="statQuizzes">—</div><div class="stat-label">Quizzes</div></div>
         <div class="stat-card"><div class="stat-value" id="statScore">—</div><div class="stat-label">Avg Score</div></div>
       </div>
-      <div class="tab-bar">
-        <button class="tab-btn active" data-tab="resultsTab">Summaries & MCQs</button>
-        <button class="tab-btn" data-tab="quizTab">Quiz Attempts</button>
+      <div class="history-tabs">
+        <div class="tab-bar" id="historyTabBar" role="tablist" aria-label="History Navigation">
+          <button class="tab-btn active" data-tab="resultsTab" id="historyResultsTabBtn" type="button" 
+                  role="tab" aria-selected="true" aria-controls="resultsTab">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <folder x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="9" y1="9" x2="15" y2="9"/>
+            </svg>
+            Summaries & MCQs
+          </button>
+          <button class="tab-btn" data-tab="quizTab" id="historyQuizTabBtn" type="button" 
+                  role="tab" aria-selected="false" aria-controls="quizTab">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"/>
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+            Quiz Attempts
+          </button>
+        </div>
       </div>
-      <div id="resultsTab" class="tab-content">
+      <div id="resultsTab" class="tab-content" role="tabpanel" aria-labelledby="historyResultsTabBtn">
         <div id="historyList" class="history-list"><p class="text-muted">Loading...</p></div>
       </div>
-      <div id="quizTab" class="tab-content hidden">
+      <div id="quizTab" class="tab-content hidden" role="tabpanel" aria-labelledby="historyQuizTabBtn">
         <div id="quizHistoryList" class="history-list"><p class="text-muted">Loading...</p></div>
       </div>
     </div>

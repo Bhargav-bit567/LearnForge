@@ -15,10 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── TabManager Class ───────────────────────────────────────────────────────
   class TabManager {
-    constructor(tabBarSelector) {
+    constructor(tabBarSelector, options = {}) {
       this.tabBar = document.querySelector(tabBarSelector);
       this.tabs = this.tabBar?.querySelectorAll('.tab-btn') || [];
       this.activeTab = null;
+      this.isHistoryPanel = tabBarSelector.includes('history');
+      this.options = options;
       this.init();
     }
 
@@ -48,38 +50,58 @@ document.addEventListener("DOMContentLoaded", () => {
     switchTab(targetTab) {
       if (!targetTab || targetTab === this.activeTab) return;
       
-      // Save quiz answers before switching (if coming from quiz tab)
-      if (this.activeTab === 'quizTab') {
+      // Save quiz answers before switching (only for main results tabs)
+      if (!this.isHistoryPanel && this.activeTab === 'quizTab') {
         this.saveQuizAnswers();
       }
       
-      // Update tab buttons
+      // Update tab buttons within this specific tab bar
       this.tabs.forEach(tab => {
         const isActive = tab.dataset.tab === targetTab;
         tab.classList.toggle('active', isActive);
         tab.setAttribute('aria-selected', isActive);
       });
       
-      // Update tab content
-      document.querySelectorAll('.tab-content').forEach(content => {
-        const isVisible = content.id === targetTab;
-        content.classList.toggle('hidden', !isVisible);
-      });
+      // Update tab content - scope to the container context
+      const container = this.isHistoryPanel ? 
+        document.querySelector('#historyPanel') : 
+        document.querySelector('.results-container');
+      
+      if (container) {
+        const tabContents = container.querySelectorAll('.tab-content');
+        tabContents.forEach(content => {
+          const isVisible = content.id === targetTab;
+          content.classList.toggle('hidden', !isVisible);
+        });
+      }
       
       // Update active tab state
       const prevTab = this.activeTab;
       this.activeTab = targetTab;
-      currentActiveTab = targetTab;
       
-      // Restore quiz answers if switching to quiz tab
-      if (targetTab === 'quizTab') {
-        this.restoreQuizAnswers();
+      // Handle specific functionality based on context
+      if (this.isHistoryPanel) {
+        this.handleHistoryTabSwitch(targetTab);
+      } else {
+        currentActiveTab = targetTab;
+        // Restore quiz answers if switching to quiz tab
+        if (targetTab === 'quizTab') {
+          this.restoreQuizAnswers();
+        }
+        // Update quiz tab badge
+        this.updateQuizTabBadge();
       }
       
-      // Update quiz tab badge if quiz is completed
-      this.updateQuizTabBadge();
-      
-      console.log(`Tab switched from ${prevTab} to ${targetTab}`);
+      console.log(`${this.isHistoryPanel ? 'History' : 'Results'} tab switched from ${prevTab} to ${targetTab}`);
+    }
+
+    handleHistoryTabSwitch(targetTab) {
+      // History-specific tab switching logic
+      if (targetTab === 'quizTab' && authToken) {
+        loadQuizHistory();
+      } else if (targetTab === 'resultsTab' && authToken) {
+        // Results tab is loaded when history panel opens, but we can refresh if needed
+      }
     }
 
     saveQuizAnswers() {
@@ -107,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     updateQuizTabBadge() {
-      if (!quizTabBadge || currentMCQs.length === 0) return;
+      if (this.isHistoryPanel || !quizTabBadge || currentMCQs.length === 0) return;
       
       const answeredCount = quizAnswers.size;
       const totalCount = currentMCQs.length;
@@ -129,6 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     resetQuizState() {
+      if (this.isHistoryPanel) return; // Only reset for main results tabs
+      
       quizAnswers.clear();
       quizSubmitted = false;
       this.updateQuizTabBadge();
@@ -205,6 +229,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const summaryTab = document.getElementById("summaryTab");
   const quizTab = document.getElementById("quizTab");
 
+  // History tab elements
+  const historyTabBar = document.getElementById("historyTabBar");
+  const historyResultsTabBtn = document.getElementById("historyResultsTabBtn");
+  const historyQuizTabBtn = document.getElementById("historyQuizTabBtn");
+
   // ── Health check ───────────────────────────────────────────────────────────
   async function checkHealth() {
     try {
@@ -218,10 +247,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── Initialize TabManager ──────────────────────────────────────────────────
   let resultsTabManager;
+  let historyTabManager;
   
   // Initialize tab managers after DOM is ready
   function initTabManagers() {
     resultsTabManager = new TabManager('#resultsTabBar');
+    historyTabManager = new TabManager('#historyTabBar');
   }
   
   // Call initialization
@@ -344,28 +375,20 @@ document.addEventListener("DOMContentLoaded", () => {
   closeHistory.addEventListener("click", () => historyPanel.classList.add("hidden"));
   historyPanel.addEventListener("click", (e) => { if (e.target === historyPanel) historyPanel.classList.add("hidden"); });
 
-  tabBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      // Only handle history panel tabs here
-      if (!btn.closest('#historyPanel')) return;
-      
-      tabBtns.forEach(b => {
-        if (b.closest('#historyPanel')) {
-          b.classList.remove("active");
-        }
-      });
-      btn.classList.add("active");
-      
-      // Handle history panel tab content
-      const historyTabContents = document.querySelectorAll('#historyPanel .tab-content');
-      historyTabContents.forEach(t => t.classList.add("hidden"));
-      const targetContent = document.getElementById(btn.dataset.tab);
-      if (targetContent) {
-        targetContent.classList.remove("hidden");
-      }
-      
-      if (btn.dataset.tab === "quizTab") loadQuizHistory();
-    });
+  // Legacy tab handling is now managed by TabManager classes
+  // This section is kept for any additional history-specific functionality
+  historyResultsTabBtn?.addEventListener("click", () => {
+    // Additional logic for results tab if needed
+    if (authToken) {
+      loadHistory();
+    }
+  });
+  
+  historyQuizTabBtn?.addEventListener("click", () => {
+    // Additional logic for quiz history tab if needed  
+    if (authToken) {
+      loadQuizHistory();
+    }
   });
 
   async function loadStats() {
