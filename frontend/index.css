@@ -1,48 +1,54 @@
 /* ═══════════════════════════════════════════════════════════════
-   Tokens — Bioluminescent Neural Theme
+   Tokens — Modern Dark Theme (Dark Blue & Purple)
 ═══════════════════════════════════════════════════════════════ */
 :root {
   --font-heading: 'Space Grotesk', -apple-system, sans-serif;
   --font-body:    'Space Grotesk', -apple-system, sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 
-  --bg:           #030a06;
-  --bg-card:      rgba(4, 16, 8, 0.82);
-  --bg-elevated:  rgba(6, 20, 10, 0.7);
-  --bg-input:     rgba(0, 255, 120, 0.03);
+  /* Background colors - Rich dark theme */
+  --bg:           #0a0e27;
+  --bg-card:      rgba(15, 23, 42, 0.85);
+  --bg-elevated:  rgba(30, 41, 59, 0.8);
+  --bg-input:     rgba(99, 102, 241, 0.05);
 
-  --border:       rgba(0, 255, 100, 0.1);
-  --border-mid:   rgba(0, 255, 100, 0.22);
-  --border-hi:    rgba(0, 255, 100, 0.45);
+  /* Border colors - Subtle purples and blues */
+  --border:       rgba(99, 102, 241, 0.2);
+  --border-mid:   rgba(99, 102, 241, 0.35);
+  --border-hi:    rgba(99, 102, 241, 0.5);
 
-  --text-primary:   #e8fef0;
-  --text-secondary: #6db88a;
-  --text-muted:     #2d5c3e;
+  /* Text colors - Clean whites and grays */
+  --text-primary:   #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted:     #475569;
 
-  /* Neon palette */
-  --neon:         #00ff78;
-  --neon-dim:     rgba(0, 255, 120, 0.15);
-  --neon-glow:    rgba(0, 255, 120, 0.35);
-  --neon-bright:  #7fff9e;
+  /* Primary accent - Modern indigo/purple */
+  --neon:         #6366f1;
+  --neon-dim:     rgba(99, 102, 241, 0.15);
+  --neon-glow:    rgba(99, 102, 241, 0.4);
+  --neon-bright:  #818cf8;
 
-  --amber:        #ffb700;
-  --amber-dim:    rgba(255, 183, 0, 0.12);
-  --amber-glow:   rgba(255, 183, 0, 0.35);
+  /* Secondary colors */
+  --amber:        #f59e0b;
+  --amber-dim:    rgba(245, 158, 11, 0.15);
+  --amber-glow:   rgba(245, 158, 11, 0.4);
 
-  --teal:         #00e5cc;
-  --teal-dim:     rgba(0, 229, 204, 0.1);
-  --teal-glow:    rgba(0, 229, 204, 0.3);
+  --teal:         #14b8a6;
+  --teal-dim:     rgba(20, 184, 166, 0.15);
+  --teal-glow:    rgba(20, 184, 166, 0.4);
 
-  --red:          #ff4d6d;
-  --red-dim:      rgba(255, 77, 109, 0.12);
+  --red:          #ef4444;
+  --red-dim:      rgba(239, 68, 68, 0.15);
 
+  /* Border radius tokens */
   --r-sm:  6px;
   --r-md:  12px;
   --r-lg:  18px;
   --r-xl:  24px;
 
-  --shadow-card: 0 8px 40px -8px rgba(0,0,0,0.8), 0 0 0 1px var(--border);
-  --shadow-neon: 0 0 20px var(--neon-glow), 0 0 60px rgba(0,255,120,0.1);
+  /* Enhanced shadows */
+  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border);
+  --shadow-neon: 0 0 20px var(--neon-glow), 0 0 60px rgba(99, 102, 241, 0.2);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1126,9 +1132,9 @@ body::after {
 
 .results-tabs .tab-bar {
   margin-bottom: 28px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  background: rgba(4, 16, 8, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.8);
   border-radius: var(--r-md) var(--r-md) 0 0;
   padding: 4px;
   border: 1px solid var(--border);
@@ -1143,7 +1149,7 @@ body::after {
   left: -2px;
   right: -2px;
   bottom: -20px;
-  background: linear-gradient(135deg, rgba(0,255,100,0.03), rgba(0,255,100,0.01));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.02));
   border-radius: var(--r-md);
   z-index: -1;
   opacity: 0;
@@ -1162,7 +1168,7 @@ body::after {
 
 .history-tabs .tab-bar {
   margin-bottom: 24px;
-  background: rgba(0,255,100,0.02);
+  background: rgba(99, 102, 241, 0.05);
   border-radius: var(--r-sm);
   padding: 2px;
   border: 1px solid var(--border);
@@ -1251,7 +1257,7 @@ body::after {
 
 /* Improved hover states */
 .tab-btn:hover:not(.active) {
-  background: rgba(0,255,100,0.05);
+  background: rgba(99, 102, 241, 0.1);
   border-radius: var(--r-sm);
   transform: translateY(-1px);
 }
@@ -1277,17 +1283,17 @@ body::after {
 
 /* Badge color variations for different scores */
 .quiz-tab-badge.high-score {
-  background: rgba(0,255,120,0.15);
-  color: var(--neon);
-  border-color: var(--neon);
-  box-shadow: 0 1px 2px rgba(0,255,120,0.1);
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border-color: #22c55e;
+  box-shadow: 0 1px 2px rgba(34, 197, 94, 0.1);
 }
 
 .quiz-tab-badge.low-score {
   background: var(--red-dim);
   color: var(--red);
-  border-color: rgba(255,77,109,0.3);
-  box-shadow: 0 1px 2px rgba(255,77,109,0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.1);
 }
 
 /* Tab bar enhancements */
@@ -1353,7 +1359,7 @@ body::after {
 
 #btnSubmitQuiz:hover, #btnResetQuiz:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,255,100,0.2);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 #btnSubmitQuiz:active, #btnResetQuiz:active {
@@ -1375,12 +1381,12 @@ body::after {
   transition: all 0.3s ease;
   padding: 2px 8px;
   border-radius: var(--r-sm);
-  background: rgba(0,255,100,0.05);
+  background: rgba(99, 102, 241, 0.08);
   border: 1px solid transparent;
 }
 
 #quiz-progress-indicator.complete {
-  background: rgba(0,255,100,0.1);
+  background: rgba(99, 102, 241, 0.15);
   border-color: var(--neon);
   color: var(--neon) !important;
   font-weight: 600;
@@ -1428,14 +1434,26 @@ body::after {
   display: flex;
   align-items: center;
   gap: 6px;
+  border-radius: var(--r-sm);
+  margin: 0 2px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+#historyPanel .tab-btn:hover {
+  background: rgba(99, 102, 241, 0.08);
+  transform: translateY(-1px);
 }
 
 #historyPanel .tab-btn svg {
   opacity: 0.7;
+  transition: all 0.2s ease;
 }
 
-#historyPanel .tab-btn.active svg {
+#historyPanel .tab-btn.active svg,
+#historyPanel .tab-btn:hover svg {
   opacity: 1;
+  transform: scale(1.05);
 }
 .tab-content.hidden { display: none; }
 
